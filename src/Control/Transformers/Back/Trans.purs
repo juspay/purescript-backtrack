@@ -1,9 +1,11 @@
-module Control.Monad.Back.Trans (runBackT, BackT(..), FailBack(..)) where
+module Control.Transformers.Back.Trans (runBackT, BackT(..), FailBack(..)) where
 
 import Prelude
 
 data FailBack a = BackPoint a | NoBack a | GoBack
 newtype BackT m a = BackT (m(FailBack a))
+
+runBackT :: forall a b. BackT a b -> a (FailBack b)
 runBackT (BackT x) = x
 
 mapFailBack :: ∀ a b. (a → b) → FailBack a → FailBack b
