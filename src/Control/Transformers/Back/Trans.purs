@@ -44,7 +44,6 @@ instance functorFailbackT :: (Functor f) => Functor (BackT f) where
 instance applyFailbackT :: (Monad m) => Apply (BackT m) where
   apply = ap
 
-
 instance applicativeFailbackT :: (Monad m) => Applicative (BackT m) where
   pure = BackT <<< pure <<< NoBack
 
