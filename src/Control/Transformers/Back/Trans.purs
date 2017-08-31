@@ -66,4 +66,4 @@ instance monadTransBackT :: MonadTrans BackT where
   lift m = BackT $ NoBack <$> m
 
 instance monadStateBackT :: MonadState s m => MonadState s (BackT m) where
-  state f = lift (state f)
+  state = lift <<< state
