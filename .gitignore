@@ -1,0 +1,6 @@
+/bower_components/
+/.pulp-cache/
+/output/
+/.psc*
+/.purs*
+/.psa*
