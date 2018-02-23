@@ -1,6 +1,9 @@
 module Control.Transformers.Back.Trans (runBackT, BackT(..), FailBack(..)) where
 
 import Prelude
+
+import Control.Monad.Eff.Class (class MonadEff, liftEff)
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.Monad.State.Class (class MonadState, state)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 
@@ -63,7 +66,19 @@ instance bindFailbackT :: (Monad m) => Bind (BackT m) where
 instance monadFailbackT :: (Monad m) => Monad (BackT m)
 
 instance monadTransBackT :: MonadTrans BackT where
-  lift m = BackT $ NoBack <$> m
+  lift = BackT <<< (map NoBack)
 
 instance monadStateBackT :: MonadState s m => MonadState s (BackT m) where
   state = lift <<< state
+
+instance monadRecBackT :: MonadRec m ⇒ MonadRec (BackT m) where
+  tailRecM :: ∀ a b m. MonadRec m ⇒ (a → BackT m (Step a b)) → a → BackT m b
+  tailRecM f = BackT <<< tailRecM \a → (runBackT $ f a) >>= \m' → pure $ case m' of
+                                                                           NoBack (Loop a') → Loop a'
+                                                                           NoBack (Done b) → Done (NoBack b)
+                                                                           BackPoint (Loop a') → Loop a'
+                                                                           BackPoint (Done b) → Done (BackPoint b)
+                                                                           GoBack → Done GoBack
+
+instance monadEffBackT :: MonadEff eff m ⇒ MonadEff eff (BackT m) where
+  liftEff = lift <<< liftEff
