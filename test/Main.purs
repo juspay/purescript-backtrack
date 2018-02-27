@@ -23,7 +23,7 @@ main = runBackT $ do
   _ ← if (b >= 9) then pure unit else BackT (pure GoBack)
   liftEff $ logShow (a + b)
 
-testRec :: Number → (Eff (random :: RANDOM, console :: CONSOLE)) (FailBack Number)
-testRec r = runBackT $ tailRecM loop r
-  where loop i | i > 0.999 = pure $ Done i
-               | otherwise = (liftEff $ log "Generating a new number") *> (liftEff $ Loop <$> random)
+testRec :: Eff (random :: RANDOM, console :: CONSOLE) Unit
+testRec = void <$> runBackT $ tailRecM loop {r : 0.0, c : 1}
+  where loop i | i.r > 0.9999999 = (liftEff $ log $ "Didn't stackoverflow for " <> show i.c <> " iters") *> (pure $ Done i)
+               | otherwise = (liftEff $ log "Generating a new number") *> (liftEff $ (\r → Loop {r : r, c : i.c + 1}) <$> random)
