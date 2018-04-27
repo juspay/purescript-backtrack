@@ -12,7 +12,6 @@
     "purescript-prelude": "^3.1.0",
     "purescript-console": "^3.0.0",
     "purescript-transformers": "^3.4.0",
-    "purescript-aff": "3.1.0",
     "purescript-tailrec": "^3.3.0"
   },
   "devDependencies": {
