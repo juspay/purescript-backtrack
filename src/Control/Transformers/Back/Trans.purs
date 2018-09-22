@@ -3,7 +3,7 @@ module Control.Transformers.Back.Trans (runBackT, BackT(..), FailBack(..)) where
 import Prelude
 
 import Control.Alternative (class Alt, class Alternative)
-import Control.Monad.Eff.Class (class MonadEff, liftEff)
+import Effect.Class (class MonadEffect, liftEffect)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.Monad.State.Class (class MonadState, state)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
@@ -69,8 +69,8 @@ instance monadRecBackT :: MonadRec m ⇒ MonadRec (BackT m) where
                                                                            BackPoint (Done b) → Done (BackPoint b)
                                                                            GoBack → Done GoBack
 
-instance monadEffBackT :: MonadEff eff m ⇒ MonadEff eff (BackT m) where
-  liftEff = lift <<< liftEff
+instance monadEffBackT :: MonadEffect m ⇒ MonadEffect (BackT m) where
+  liftEffect = lift <<< liftEffect
 
 instance altBackT :: Monad m ⇒ Alt (BackT m) where
   alt (BackT m1) (BackT m2) = BackT do
