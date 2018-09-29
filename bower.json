@@ -22,5 +22,5 @@
   "description": "A monad transformer for backtracking in continuation based programs",
   "main": "",
   "license": "MIT",
-  "version": "0.2"
+  "version": "0.3"
 }
