@@ -8,7 +8,6 @@ import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.Monad.State.Class (class MonadState, state)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Control.MonadPlus (class Plus)
-import Control.MonadZero (class MonadZero)
 
 data FailBack a = BackPoint a | NoBack a | GoBack
 newtype BackT m a = BackT (m(FailBack a))
@@ -94,4 +93,3 @@ instance plusBackT :: Monad m ⇒ Plus (BackT m) where
 
 instance alternativeBackT :: Monad m ⇒ Alternative (BackT m)
 
-instance monadZeroBackT :: Monad m ⇒ MonadZero (BackT m)
