@@ -1,8 +1,13 @@
 module Control.Transformers.Back.Trans (runBackT, BackT(..), FailBack(..)) where
 
 import Prelude
+
+import Control.Alternative (class Alt, class Alternative)
+import Effect.Class (class MonadEffect, liftEffect)
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.Monad.State.Class (class MonadState, state)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
+import Control.MonadPlus (class Plus)
 
 data FailBack a = BackPoint a | NoBack a | GoBack
 newtype BackT m a = BackT (m(FailBack a))
@@ -16,25 +21,11 @@ mapFailBack f fb = case fb of
                         NoBack a → NoBack (f a)
                         GoBack → GoBack
 
-applyFailback :: ∀ a b. FailBack (a → b) → FailBack a → FailBack b
-applyFailback GoBack _ = GoBack
-applyFailback _ GoBack = GoBack
-applyFailback (NoBack f) (NoBack x) = NoBack (f x)
-applyFailback (NoBack f) (BackPoint x) = NoBack (f x)
-applyFailback (BackPoint f) (NoBack x) = NoBack ( f x)
-applyFailback (BackPoint f) (BackPoint x) = NoBack (f x)
-
 instance functorFailback :: Functor FailBack where
   map = mapFailBack
 
-instance applicativeFailback :: Applicative FailBack where
-  pure = NoBack
-
-instance applyFailback' :: Apply FailBack where
-  apply = applyFailback
-
 instance showFailback :: (Show a) => Show (FailBack a) where
-  show (NoBack a) = "NoBack" <> (show a)
+  show (NoBack a) = "NoBack " <> (show a)
   show (BackPoint a) = "BackPoint " <> (show a)
   show (GoBack) = "GoBack"
 
@@ -63,7 +54,41 @@ instance bindFailbackT :: (Monad m) => Bind (BackT m) where
 instance monadFailbackT :: (Monad m) => Monad (BackT m)
 
 instance monadTransBackT :: MonadTrans BackT where
-  lift m = BackT $ NoBack <$> m
+  lift = BackT <<< (map NoBack)
 
 instance monadStateBackT :: MonadState s m => MonadState s (BackT m) where
   state = lift <<< state
+
+instance monadRecBackT :: MonadRec m ⇒ MonadRec (BackT m) where
+  tailRecM :: ∀ a b m. MonadRec m ⇒ (a → BackT m (Step a b)) → a → BackT m b
+  tailRecM f = BackT <<< tailRecM \a → (runBackT $ f a) >>= \m' → pure $ case m' of
+                                                                           NoBack (Loop a') → Loop a'
+                                                                           NoBack (Done b) → Done (NoBack b)
+                                                                           BackPoint (Loop a') → Loop a'
+                                                                           BackPoint (Done b) → Done (BackPoint b)
+                                                                           GoBack → Done GoBack
+
+instance monadEffBackT :: MonadEffect m ⇒ MonadEffect (BackT m) where
+  liftEffect = lift <<< liftEffect
+
+instance altBackT :: Monad m ⇒ Alt (BackT m) where
+  alt (BackT m1) (BackT m2) = BackT do
+                                m ← m1
+                                case m of
+                                     GoBack → pure GoBack
+                                     BackPoint a → do
+                                        m' ← m2
+                                        pure $ case m' of
+                                          GoBack → GoBack
+                                          _ → BackPoint a
+                                     NoBack a → do
+                                        m'← m2
+                                        pure $ case m' of
+                                          GoBack → GoBack
+                                          BackPoint a' → BackPoint a'
+                                          _ → NoBack a
+
+instance plusBackT :: Monad m ⇒ Plus (BackT m) where
+  empty = BackT $ pure GoBack
+
+instance alternativeBackT :: Monad m ⇒ Alternative (BackT m)
